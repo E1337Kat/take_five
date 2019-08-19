@@ -19,6 +19,7 @@ defmodule TakeFive.Application do
     main_viewport_config = Application.get_env(:take_five, :viewport)
 
     [
+      {Picam.FakeCamera, []},
       {Scenic, viewports: [main_viewport_config]}
     ]
   end
@@ -27,6 +28,7 @@ defmodule TakeFive.Application do
     main_viewport_config = Application.get_env(:take_five, :viewport)
 
     [
+      {Picam.Camera, []},
       {Scenic, viewports: [main_viewport_config]}
     ]
   end

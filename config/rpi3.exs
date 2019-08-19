@@ -2,7 +2,6 @@ use Mix.Config
 
 config :take_five, :viewport, %{
   name: :main_viewport,
-  # default_scene: {ScenicPhotoBoothNerves.Scene.Crosshair, nil},
   default_scene: {TakeFive.Scene.SysInfo, nil},
   size: {800, 480},
   #size: {1920, 1080},

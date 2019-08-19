@@ -16,6 +16,29 @@ config :nerves, :firmware, rootfs_overlay: "rootfs_overlay"
 # docs for separating out critical OTP applications such as those
 # involved with firmware updates.
 
+config :nerves_network,
+  regulatory_domain: "US"
+  
+key_mgmt = System.get_env("NERVES_NETWORK_KEY_MGMT") || "WPA-PSK"
+
+home = [
+          ssid: System.get_env("NERVES_NETWORK_SSID"),
+          psk: System.get_env("NERVES_NETWORK_PSK"),
+          key_mgmt: String.to_atom(key_mgmt),
+          scan_ssid: 1 #if your WiFi setup as hidden
+       ]
+
+config :nerves_network, :default,
+  wlan0: [
+    networks: [
+      network
+    ]
+  ],
+  eth0: [
+    ipv4_address_method: :dhcp
+  ]
+
+
 config :shoehorn,
   init: [:nerves_runtime, :nerves_init_gadget],
   app: Mix.Project.config()[:app]

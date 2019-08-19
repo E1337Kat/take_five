@@ -45,12 +45,14 @@ defmodule TakeFive.MixProject do
       {:toolshed, "~> 0.2"},
       {:scenic, "~> 0.10"},
       {:scenic_sensor, "~> 0.7"},
+      {:nerves_network, "~> 0.5"},
 
       # Dependencies for all targets except :host
       {:nerves_runtime, "~> 0.9", targets: @all_targets},
       {:nerves_init_gadget, "~> 0.4", targets: @all_targets},
       {:scenic_driver_nerves_rpi, "~> 0.10.1", targets: @all_targets},
       {:scenic_driver_nerves_touch, "~> 0.10", targets: @all_targets},
+      {:picam, "~> 0.4"},
 
       # Dependencies for specific targets
       {:nerves_system_rpi, "~> 1.8", runtime: false, targets: :rpi},
@@ -67,7 +69,7 @@ defmodule TakeFive.MixProject do
   def release do
     [
       overwrite: true,
-      cookie: "#{@app}_cookie",
+      cookie: "chocolatechip",
       include_erts: &Nerves.Release.erts/0,
       steps: [&Nerves.Release.init/1, :assemble],
       strip_beams: Mix.env() == :prod
