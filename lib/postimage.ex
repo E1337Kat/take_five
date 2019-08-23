@@ -7,23 +7,30 @@ defmodule Postimage do
   if it comes from the database, an external API or others.
   """
 
-
-  @doc "Sends the image to the recipient"
-  defp send_post(url, photo, headers) do
-    HTTPoison.post(url, photo, headers)
+  @doc "send all images to the recipient"
+  def post_images(pics, troll) do
+    gts = DateTime.to_unix DateTime.utc_now
+    
+    pics
+    |> Enum.with_index
+    |> Enum.map(fn {pic, index} -> 
+      post_image(pic, index, gts, troll) 
+    end)
   end
 
-  @doc "posts the image after finding out what it is"
-  def post_image(photo, index, gts) do
-    url = "https://postman-echo.com/post"
-    IO.puts MIME.from_path photo
-    headers = [{"Accept", MIME.from_path(photo)},
-	       {"Index", index},
-	       {"GTS", gts},
-	       {"UserID", "someuuid"}
-	      ]
-
-    send_post url, photo, headers
+  @doc "posts the image as jpeg"
+  def post_image(jpg, index, gts, troll) do
+    HTTPoison.post(
+      "https://postman-echo.com/post", 
+      jpg, 
+        [
+          {"Content-Type", "image/jpeg"}, 
+          {"Content-length", to_string byte_size(jpg)},
+          {"Index", to_string(index)},
+          {"Troll", troll}, 
+          {"GTS", to_string(gts)}
+   	    ]
+      )
   end
   
 end
