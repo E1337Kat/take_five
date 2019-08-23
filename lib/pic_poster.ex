@@ -1,4 +1,4 @@
-defmodule Postimage do
+defmodule TakeFive.PicPoster do
   @moduledoc """
   Postimage keeps the contexts that define your domain
   and business logic.
