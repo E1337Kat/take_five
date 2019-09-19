@@ -8,7 +8,7 @@ defmodule TakeFive.Scene.PhotoBooth do
   require Logger
 
   @target Mix.target()
-  
+
   @system_info """
   MIX_TARGET: #{@target}
   MIX_ENV: #{Mix.env()}
@@ -17,6 +17,19 @@ defmodule TakeFive.Scene.PhotoBooth do
 
   @image_path :code.priv_dir(:take_five) |> Path.join("elder.jpg")
   @image_hash Scenic.Cache.Support.Hash.file!(@image_path, :sha)
+
+  @start_graph Graph.build(font_size: 22, font: :roboto_mono)
+               |> group(
+                  fn g ->
+                    g
+                    |> button("Take Pic", id: :btn_take_pic, t: {0, 0}, theme: :success)
+                  end, t: {10, 240})
+               )
+
+  def filter_event({:click, :btn_take_pic} = event, _from, graph) do
+    Picam.set_preview_enabled(true)
+    {:cont, event, graph}
+  end
 
   @graph Graph.build(font_size: 22, font: :roboto_mono)
          |> group(
