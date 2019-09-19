@@ -1,4 +1,4 @@
-defmodule TakeFive.Scene.SysInfo do
+defmodule TakeFive.Scene.PhotoBooth do
   use Scenic.Scene
   alias Scenic.Graph
 
