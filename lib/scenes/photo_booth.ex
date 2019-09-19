@@ -56,7 +56,16 @@ defmodule TakeFive.Scene.PhotoBooth do
            |> button("640x360", id: :btn_360, t: {0, 120})
            |> button("Oil Paint", id: :btn_effect, t: {0, 160})
          end, t: {10, 240})
-
+  
+  @countdown Graph.build(font_size: 100, font: :roboto_mono)
+         |> group(
+           fn g ->
+             g
+             |> text("3")
+           end,
+           t: {10, 30}
+         )
+  
   # --------------------------------------------------------
   def init(_, opts) do
     {:ok, info} = Scenic.ViewPort.info(opts[:viewport])
@@ -75,10 +84,7 @@ defmodule TakeFive.Scene.PhotoBooth do
     Picam.set_preview_fullscreen(false)
     Picam.set_preview_enabled(true)
 
-    graph =
-      @graph
-      |> Graph.modify(:vp_info, &text(&1, vp_info))
-      |> Graph.modify(:device_list, &update_opts(&1, hidden: @target == :host))
+    graph = @countdown
 
     unless @target == :host do
       # subscribe to the simulated temperature sensor
