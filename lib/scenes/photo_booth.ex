@@ -26,11 +26,6 @@ defmodule TakeFive.Scene.PhotoBooth do
                   end, t: {10, 240})
                )
 
-  def filter_event({:click, :btn_take_pic} = event, _from, graph) do
-    Picam.set_preview_enabled(true)
-    {:cont, event, graph}
-  end
-
   @graph Graph.build(font_size: 22, font: :roboto_mono)
          |> group(
            fn g ->
@@ -129,6 +124,11 @@ defmodule TakeFive.Scene.PhotoBooth do
 
       {:noreply, graph, push: graph}
     end
+  end
+
+  def filter_event({:click, :btn_take_pic} = event, _from, graph) do
+    Picam.set_preview_enabled(true)
+    {:cont, event, graph}
   end
 
   def filter_event({:click, :btn_enable} = event, _from, graph) do
