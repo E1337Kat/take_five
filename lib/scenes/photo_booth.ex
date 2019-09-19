@@ -57,13 +57,13 @@ defmodule TakeFive.Scene.PhotoBooth do
            |> button("Oil Paint", id: :btn_effect, t: {0, 160})
          end, t: {10, 240})
   
-  @countdown Graph.build(font_size: 100, font: :roboto_mono)
+  @countdown Graph.build(font_size: 250, font: :roboto_mono)
          |> group(
            fn g ->
              g
              |> text("3")
            end,
-           t: {10, 30}
+           t: {30, 300}
          )
   
   # --------------------------------------------------------
