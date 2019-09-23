@@ -89,20 +89,13 @@ defmodule TakeFive.Scene.PhotoBooth do
   
   def countdown(booth) do
     {count, milliseconds} = booth.countdown_list |> List.first
-    
     Process.send_after(self(), :countdown_tick, milliseconds)
-    
     PhotoBooth.countdown(booth)
   end
 
-  def filter_event({:click, :btn_take_pic} = event, _from, {_graph, booth}) do
-    graph = 
-      @countdown
-      |> next_countdown(hd(booth.countdown_list))
-    
-    # todo: get camera state
-    # todo: 
-    {:cont, event, {graph, countdown(booth)}}
+  def filter_event({:click, :btn_take_pic} = event, _from, {graph, booth}) do
+    send(self(), :countdown_tick)
+    {:cont, event, {graph, booth}}
   end
   
   def handle_info(:countdown_tick, {graph, booth}) do
