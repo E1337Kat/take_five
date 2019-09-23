@@ -9,67 +9,21 @@ defmodule TakeFive.Scene.PhotoBooth do
 
   @target Mix.target()
 
-  @system_info """
-  MIX_TARGET: #{@target}
-  MIX_ENV: #{Mix.env()}
-  Scenic version: #{Scenic.version()}
-  """
-
   @image_path :code.priv_dir(:take_five) |> Path.join("elder.jpg")
   @image_hash Scenic.Cache.Support.Hash.file!(@image_path, :sha)
 
-  @start_graph Graph.build(font_size: 22, font: :roboto_mono)
+  @start_graph Graph.build(font_size: 50, font: :roboto_mono)
                |> group(
                   fn g ->
                     g
-                    |> button("Take Pic", id: :btn_take_pic, t: {0, 0}, theme: :success)
-                  end, t: {10, 240})
-               )
+                    |> button(
+                      "Start", 
+                      width: 100, 
+                      height: 100, 
+                      id: :btn_take_pic, 
+                      t: {10, 240}, theme: :success)
+                  end, [])
 
-  def filter_event({:click, :btn_take_pic} = event, _from, graph) do
-    Picam.set_preview_enabled(true)
-    {:cont, event, graph}
-  end
-
-  @graph Graph.build(font_size: 22, font: :roboto_mono)
-         |> group(
-           fn g ->
-             g
-             |> text("System")
-             |> text(@system_info, translate: {10, 20}, font_size: 18)
-           end,
-           t: {10, 30}
-         )
-         |> group(
-           fn g ->
-             g
-             |> text("ViewPort")
-             |> text("", translate: {10, 20}, font_size: 18, id: :vp_info)
-           end,
-           t: {10, 110}
-         )
-         |> group(
-           fn g ->
-             g
-             |> text("Input Devices")
-             |> text("Devices are being loaded...",
-               translate: {10, 20},
-               font_size: 18,
-               id: :devices
-             )
-           end,
-           t: {280, 30},
-           id: :device_list
-         )
-         |> group(fn g ->
-           g
-           |> button("Enable", id: :btn_enable, t: {0, 0}, theme: :success)
-           |> button("Disable", id: :btn_disable, t: {0, 40}, theme: :danger)
-           |> button("640x480", id: :btn_480, t: {0, 80})
-           |> button("640x360", id: :btn_360, t: {0, 120})
-           |> button("Oil Paint", id: :btn_effect, t: {0, 160})
-         end, t: {10, 240})
-  
   @countdown Graph.build(font_size: 250, font: :roboto_mono)
          |> group(
            fn g ->
@@ -80,24 +34,10 @@ defmodule TakeFive.Scene.PhotoBooth do
          )
   
   # --------------------------------------------------------
-  def init(_, opts) do
-    {:ok, info} = Scenic.ViewPort.info(opts[:viewport])
-
-    vp_info = """
-    size: #{inspect(Map.get(info, :size))}
-    styles: #{inspect(Map.get(info, :styles, %{a: 1, b: 2}))}
-    transforms: #{inspect(Map.get(info, :transforms, %{}))}
-    drivers: #{inspect(Map.get(info, :drivers))}
-    """
-
-    Picam.set_size(640, 480)
-    prev_w = 640
-    prev_h = 480
-    Picam.set_preview_window(800 - prev_w, 480 - prev_h, prev_w, prev_h)
-    Picam.set_preview_fullscreen(false)
-    Picam.set_preview_enabled(true)
-
-    graph = @countdown
+  def init(_, _opts) do
+    initialize_picam()
+    
+    graph = @start_graph
 
     unless @target == :host do
       # subscribe to the simulated temperature sensor
@@ -107,6 +47,15 @@ defmodule TakeFive.Scene.PhotoBooth do
     #Process.send_after(self(), :next_frame, 30)
 
     {:ok, graph, push: graph}
+  end
+  
+  def initialize_picam() do
+    Picam.set_size(640, 480)
+    prev_w = 640
+    prev_h = 480
+    Picam.set_preview_window(800 - prev_w, 480 - prev_h, prev_w, prev_h)
+    Picam.set_preview_fullscreen(false)
+    Picam.set_preview_enabled(true)
   end
 
   def handle_info(:next_frame, graph) do
@@ -166,6 +115,15 @@ defmodule TakeFive.Scene.PhotoBooth do
 
   def filter_event({:click, :btn_effect} = event, _from, graph) do
     Picam.set_img_effect(:oilpaint)
+    {:cont, event, graph}
+  end
+
+  # keep
+  
+  def filter_event({:click, :btn_take_pic} = event, _from, _graph) do
+    graph = @countdown
+    # todo: get camera state
+    # todo: 
     {:cont, event, graph}
   end
 
