@@ -1,13 +1,12 @@
 defmodule TakeFive.Scene.PhotoBooth do
   use Scenic.Scene
   alias Scenic.Graph
+  alias Pex.Core.PhotoBooth
 
   import Scenic.Primitives
   import Scenic.Components
 
   require Logger
-
-  @target Mix.target()
 
   @image_path :code.priv_dir(:take_five) |> Path.join("elder.jpg")
   @image_hash Scenic.Cache.Support.Hash.file!(@image_path, :sha)
@@ -25,28 +24,21 @@ defmodule TakeFive.Scene.PhotoBooth do
                   end, [])
 
   @countdown Graph.build(font_size: 250, font: :roboto_mono)
-         |> group(
-           fn g ->
-             g
-             |> text("3")
-           end,
-           t: {30, 300}
-         )
   
   # --------------------------------------------------------
   def init(_, _opts) do
     initialize_picam()
     
     graph = @start_graph
+    
+    push_graph(graph)
 
-    unless @target == :host do
-      # subscribe to the simulated temperature sensor
-      Process.send_after(self(), :update_devices, 100)
-    end
+    # subscribe to the simulated temperature sensor
+    Process.send_after(self(), :next_camera_frame, 100)
 
     #Process.send_after(self(), :next_frame, 30)
 
-    {:ok, graph, push: graph}
+    {:ok, {graph, PhotoBooth.new(false)}}
   end
   
   def initialize_picam() do
@@ -57,6 +49,17 @@ defmodule TakeFive.Scene.PhotoBooth do
     Picam.set_preview_fullscreen(false)
     Picam.set_preview_enabled(true)
   end
+  
+  def next_countdown(scene, {number, _milliseconds}) do
+    scene
+    |> group(
+      fn g ->
+        g
+        |> text("#{number}")
+      end,
+      t: {30, 300}
+    )
+  end
 
   def handle_info(:next_frame, graph) do
     jpg = Picam.next_frame()
@@ -66,69 +69,37 @@ defmodule TakeFive.Scene.PhotoBooth do
     {:ok, graph}
   end
 
-  unless @target == :host do
-    # --------------------------------------------------------
-    # Not a fan of this being polling. Would rather have InputEvent send me
-    # an occasional event when something changes.
-    def handle_info(:update_devices, graph) do
-      Process.send_after(self(), :update_devices, 100)
+  # --------------------------------------------------------
+  # Not a fan of this being polling. Would rather have InputEvent send me
+  # an occasional event when something changes.
+  def handle_info(:next_camera_frame, {graph, booth}) do
+    Process.send_after(self(), :next_camera_frame, 100)
 
-      devices =
-        InputEvent.enumerate()
-        |> Enum.reduce("", fn {_, device}, acc ->
-          Enum.join([acc, inspect(device), "\r\n"])
-        end)
+    devices =
+      InputEvent.enumerate()
+      |> Enum.reduce("", fn {_, device}, acc ->
+        Enum.join([acc, inspect(device), "\r\n"])
+      end)
 
-      # update the graph
-      graph = Graph.modify(graph, :devices, &text(&1, devices))
+    # update the graph
+    graph = Graph.modify(graph, :devices, &text(&1, devices))
 
-      {:noreply, graph, push: graph}
-    end
+    {:noreply, {graph, booth}, push: graph}
   end
 
-  def filter_event({:click, :btn_enable} = event, _from, graph) do
-    Picam.set_preview_enabled(true)
-    {:cont, event, graph}
-  end
-
-  def filter_event({:click, :btn_disable} = event, _from, graph) do
-    Picam.set_preview_enabled(false)
-    Picam.set_img_effect(:none)
-    {:cont, event, graph}
-  end
-
-  def filter_event({:click, :btn_480} = event, _from, graph) do
-    Picam.set_size(640, 480)
-    prev_w = 640
-    prev_h = 480
-    Picam.set_preview_window(800 - prev_w, 480 - prev_h, prev_w, prev_h)
-    {:cont, event, graph}
-  end
-
-  def filter_event({:click, :btn_360} = event, _from, graph) do
-    Picam.set_size(640, 360)
-    prev_w = 640
-    prev_h = 360
-    Picam.set_preview_window(800 - prev_w, 480 - prev_h, prev_w, prev_h)
-    {:cont, event, graph}
-  end
-
-  def filter_event({:click, :btn_effect} = event, _from, graph) do
-    Picam.set_img_effect(:oilpaint)
-    {:cont, event, graph}
+  def filter_event({:click, :btn_take_pic} = event, _from, {_graph, booth}) do
+    graph = 
+      @countdown
+      |> next_countdown(hd(booth.countdown_list))
+    
+    # todo: get camera state
+    # todo: 
+    {:cont, event, {graph, booth}}
   end
 
   # keep
-  
-  def filter_event({:click, :btn_take_pic} = event, _from, _graph) do
-    graph = @countdown
-    # todo: get camera state
-    # todo: 
-    {:cont, event, graph}
-  end
-
-  def filter_event(event, _from, graph) do
+  def filter_event(event, _from, {graph, booth}) do
     Logger.warn("Unhandled event: #{inspect event}")
-    {:cont, event, graph}
+    {:cont, event, {graph, booth}}
   end
 end
