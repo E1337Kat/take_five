@@ -54,6 +54,7 @@ defmodule TakeFive.MixProject do
       {:scenic_driver_nerves_rpi, "~> 0.10.1", targets: @all_targets},
       {:scenic_driver_nerves_touch, "~> 0.10", targets: @all_targets},
       {:picam, "~> 0.4"},
+      {:pex, git: "https://github.com/elixir-chatt/pex.git"},
 
       # Dependencies for specific targets
       {:nerves_system_rpi, "~> 1.8", runtime: false, targets: :rpi},
