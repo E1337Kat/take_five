@@ -19,6 +19,11 @@ config :nerves, :firmware, rootfs_overlay: "rootfs_overlay"
 config :nerves_network,
   regulatory_domain: "US"
   
+config :nerves_firmware_ssh,
+  authorized_keys: [
+    File.read!(Path.join(System.user_home!, ".ssh/id_rsa.pub"))
+  ]
+  
 key_mgmt = System.get_env("NERVES_NETWORK_KEY_MGMT") || "WPA-PSK"
 
 network = [

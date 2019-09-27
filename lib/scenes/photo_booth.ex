@@ -20,7 +20,7 @@ defmodule TakeFive.Scene.PhotoBooth do
                       width: 100, 
                       height: 100, 
                       id: :btn_take_pic, 
-                      t: {10, 240}, theme: :success)
+                      t: {30, 200}, theme: :success)
                   end, [])
 
   @countdown Graph.build(font_size: 250, font: :roboto_mono)
@@ -28,6 +28,7 @@ defmodule TakeFive.Scene.PhotoBooth do
   # --------------------------------------------------------
   def init(_, _opts) do
     initialize_picam()
+    seed_random_numbers()
     
     graph = @start_graph
     
@@ -37,8 +38,16 @@ defmodule TakeFive.Scene.PhotoBooth do
     Process.send_after(self(), :next_camera_frame, 100)
 
     #Process.send_after(self(), :next_frame, 30)
-
-    {:ok, {graph, PhotoBooth.new(false)}}
+    troll_mode = 
+      [true, false, false]
+      |> Enum.shuffle
+      |> List.first
+      
+    {:ok, {graph, PhotoBooth.new(troll_mode)}}
+  end
+  
+  def seed_random_numbers() do
+    :random.seed(DateTime.to_unix(DateTime.utc_now))
   end
   
   def initialize_picam() do
@@ -50,6 +59,7 @@ defmodule TakeFive.Scene.PhotoBooth do
     Picam.set_preview_enabled(true)
   end
   
+  def next_countdown(scene, nil), do: next_countdown(scene, {0, 0})
   def next_countdown(scene, {number, _milliseconds}) do
     scene
     |> group(
@@ -60,7 +70,31 @@ defmodule TakeFive.Scene.PhotoBooth do
       t: {30, 300}
     )
   end
+  
+  def advance(%{mode: :countdown}=booth) do
+    send(self(), :countdown_tick)
+    booth
+  end
+  def advance(%{mode: :choosing}=booth) do
+    send(self(), {:choose, booth})
+    booth
+  end
 
+  def countdown(%{countdown_list: []}=booth) do
+    photo = Picam.next_frame()
+    
+    booth
+    |> PhotoBooth.countdown
+    #add say cheese message
+    |> PhotoBooth.add_taken_photo(photo)
+    |> advance
+  end
+  def countdown(booth) do
+    {_count, milliseconds} = booth.countdown_list |> List.first
+    Process.send_after(self(), :countdown_tick, milliseconds)
+    PhotoBooth.countdown(booth)
+  end
+  
   def handle_info(:next_frame, graph) do
     jpg = Picam.next_frame()
     Scenic.Cache.Base.put(Scenic.Cache.Static.Texture, @image_hash, jpg)
@@ -87,27 +121,20 @@ defmodule TakeFive.Scene.PhotoBooth do
     {:noreply, {graph, booth}, push: graph}
   end
   
-  def countdown(booth) do
-    {count, milliseconds} = booth.countdown_list |> List.first
-    Process.send_after(self(), :countdown_tick, milliseconds)
-    PhotoBooth.countdown(booth)
-  end
-
-  def filter_event({:click, :btn_take_pic} = event, _from, {graph, booth}) do
-    send(self(), :countdown_tick)
-    {:cont, event, {graph, booth}}
-  end
-  
-  def handle_info(:countdown_tick, {graph, booth}) do
+  def handle_info(:countdown_tick, {_graph, booth}) do
     graph = 
       @countdown
-      |> next_countdown(hd(booth.countdown_list))
+      |> next_countdown(List.first(booth.countdown_list))
     
     {:noreply, {graph, countdown(booth)}, push: graph}
   end
   
+  def filter_event({:click, :btn_take_pic} = event, _from, {graph, booth}) do
+    send(self(), :countdown_tick)
+    {:cont, event, {graph, booth}}
+  end
 
-  # keep
+  # keep 
   def filter_event(event, _from, {graph, booth}) do
     Logger.warn("Unhandled event: #{inspect event}")
     {:cont, event, {graph, booth}}
