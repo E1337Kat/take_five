@@ -113,17 +113,6 @@ defmodule TakeFive.Scene.PhotoBooth do
     PhotoBooth.countdown(booth)
   end
   
-  def handle_info(:next_frame, {_graph, %PhotoBooth{mode: :choosing}}=state) do
-    {:ok, state}
-  end
-  def handle_info(:next_frame, state) do
-    jpg = Picam.next_frame()
-    Scenic.Cache.Base.put(Scenic.Cache.Static.Texture, @image_hash, jpg)
-
-    Process.send_after(self(), :next_frame, 30)
-    {:ok, state}
-  end
-
   # --------------------------------------------------------
   # Not a fan of this being polling. Would rather have InputEvent send me
   # an occasional event when something changes.
@@ -143,10 +132,16 @@ defmodule TakeFive.Scene.PhotoBooth do
   end
   
   def handle_info(:choose, {_graph, booth}) do
-    graph = @choose
     jpg = booth.photos |> hd
     
-    Scenic.Cache.Base.put(Scenic.Cache.Static.Texture, @image_hash, jpg)
+    image_hash = Scenic.Cache.Support.Hash.binary!(jpg, :sha)
+    Scenic.Cache.Base.put(Scenic.Cache.Static.Texture, image_hash, jpg)
+    
+    Picam.set_preview_enabled(false)
+    
+    graph = 
+      @choose
+      |> rect( {1280, 720}, fill: {:image, image_hash}, t: {400, 0})
     
     {:noreply, {graph, booth}, push: graph}
   end
