@@ -25,6 +25,24 @@ defmodule TakeFive.Scene.PhotoBooth do
 
   @countdown Graph.build(font_size: 250, font: :roboto_mono)
   
+  @choose Graph.build(font_size: 50, font: :roboto_mono)
+              |> group(
+              fn g ->
+                g
+                |> button(
+                "Keep", 
+                width: 100, 
+                height: 100, 
+                id: :btn_keep, 
+                t: {30, 100}, theme: :success)
+                |> button(
+                "Discard",
+                width: 100,
+                height: 100,
+                id: :btn_discard,
+                t: {30, 230}, theme: :danger)
+              end, [])
+  
   # --------------------------------------------------------
   def init(_, _opts) do
     initialize_picam()
@@ -76,7 +94,7 @@ defmodule TakeFive.Scene.PhotoBooth do
     booth
   end
   def advance(%{mode: :choosing}=booth) do
-    send(self(), {:choose, booth})
+    send(self(), :choose)
     booth
   end
 
@@ -95,12 +113,15 @@ defmodule TakeFive.Scene.PhotoBooth do
     PhotoBooth.countdown(booth)
   end
   
-  def handle_info(:next_frame, graph) do
+  def handle_info(:next_frame, {_graph, %PhotoBooth{mode: :choosing}}=state) do
+    {:ok, state}
+  end
+  def handle_info(:next_frame, state) do
     jpg = Picam.next_frame()
     Scenic.Cache.Base.put(Scenic.Cache.Static.Texture, @image_hash, jpg)
 
     Process.send_after(self(), :next_frame, 30)
-    {:ok, graph}
+    {:ok, state}
   end
 
   # --------------------------------------------------------
@@ -121,6 +142,16 @@ defmodule TakeFive.Scene.PhotoBooth do
     {:noreply, {graph, booth}, push: graph}
   end
   
+  def handle_info(:choose, {_graph, booth}) do
+    graph = @choose
+    jpg = booth.photos |> hd
+    
+    Scenic.Cache.Base.put(Scenic.Cache.Static.Texture, @image_hash, jpg)
+    
+    {:noreply, {graph, booth}, push: graph}
+  end
+
+
   def handle_info(:countdown_tick, {_graph, booth}) do
     graph = 
       @countdown
@@ -133,7 +164,17 @@ defmodule TakeFive.Scene.PhotoBooth do
     send(self(), :countdown_tick)
     {:cont, event, {graph, booth}}
   end
-
+  
+  def filter_event({:click, :btn_keep} = event, _from, {graph, booth}) do
+    send(self(), :choose)
+    {:cont, event, {graph, PhotoBooth.choose(booth, :accept)}}
+  end
+  
+  def filter_event({:click, :btn_discard} = event, _from, {graph, booth}) do
+    send(self(), :choose)
+    {:cont, event, {graph, PhotoBooth.choose(booth, :reject)}}
+  end
+  
   # keep 
   def filter_event(event, _from, {graph, booth}) do
     Logger.warn("Unhandled event: #{inspect event}")
