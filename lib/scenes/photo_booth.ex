@@ -52,9 +52,6 @@ defmodule TakeFive.Scene.PhotoBooth do
     
     push_graph(graph)
 
-    # subscribe to the simulated temperature sensor
-    Process.send_after(self(), :next_camera_frame, 100)
-
     #Process.send_after(self(), :next_frame, 30)
     troll_mode = 
       [true, false, false]
