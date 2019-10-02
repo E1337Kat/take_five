@@ -113,24 +113,6 @@ defmodule TakeFive.Scene.PhotoBooth do
     PhotoBooth.countdown(booth)
   end
   
-  # --------------------------------------------------------
-  # Not a fan of this being polling. Would rather have InputEvent send me
-  # an occasional event when something changes.
-  def handle_info(:next_camera_frame, {graph, booth}) do
-    Process.send_after(self(), :next_camera_frame, 100)
-
-    devices =
-      InputEvent.enumerate()
-      |> Enum.reduce("", fn {_, device}, acc ->
-        Enum.join([acc, inspect(device), "\r\n"])
-      end)
-
-    # update the graph
-    graph = Graph.modify(graph, :devices, &text(&1, devices))
-
-    {:noreply, {graph, booth}, push: graph}
-  end
-  
   def handle_info(:choose, {_graph, booth}) do
     jpg = booth.photos |> hd
     
