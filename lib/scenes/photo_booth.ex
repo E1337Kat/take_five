@@ -16,24 +16,24 @@ defmodule TakeFive.Scene.PhotoBooth do
                   fn g ->
                     g
                     |> button(
-                      "Start", 
-                      width: 100, 
-                      height: 100, 
-                      id: :btn_take_pic, 
+                      "Start",
+                      width: 100,
+                      height: 100,
+                      id: :btn_take_pic,
                       t: {30, 200}, theme: :success)
                   end, [])
 
   @countdown Graph.build(font_size: 250, font: :roboto_mono)
-  
+
   @choose Graph.build(font_size: 50, font: :roboto_mono)
               |> group(
               fn g ->
                 g
                 |> button(
-                "Keep", 
-                width: 100, 
-                height: 100, 
-                id: :btn_keep, 
+                "Keep",
+                width: 100,
+                height: 100,
+                id: :btn_keep,
                 t: {30, 100}, theme: :success)
                 |> button(
                 "Discard",
@@ -42,29 +42,29 @@ defmodule TakeFive.Scene.PhotoBooth do
                 id: :btn_discard,
                 t: {30, 230}, theme: :danger)
               end, [])
-  
+
   # --------------------------------------------------------
   def init(_, _opts) do
     initialize_picam()
     seed_random_numbers()
-    
+
     graph = @start_graph
-    
+
     push_graph(graph)
 
     #Process.send_after(self(), :next_frame, 30)
-    troll_mode = 
+    troll_mode =
       [true, false, false]
       |> Enum.shuffle
       |> List.first
-      
+
     {:ok, {graph, PhotoBooth.new(troll_mode)}}
   end
-  
+
   def seed_random_numbers() do
     :random.seed(DateTime.to_unix(DateTime.utc_now))
   end
-  
+
   def initialize_picam() do
     Picam.set_size(640, 480)
     prev_w = 640
@@ -73,7 +73,7 @@ defmodule TakeFive.Scene.PhotoBooth do
     Picam.set_preview_fullscreen(false)
     Picam.set_preview_enabled(true)
   end
-  
+
   def next_countdown(scene, nil), do: next_countdown(scene, {0, 0})
   def next_countdown(scene, {number, _milliseconds}) do
     scene
@@ -85,7 +85,7 @@ defmodule TakeFive.Scene.PhotoBooth do
       t: {30, 300}
     )
   end
-  
+
   def advance(%{mode: :countdown}=booth) do
     send(self(), :countdown_tick)
     booth
@@ -97,7 +97,7 @@ defmodule TakeFive.Scene.PhotoBooth do
 
   def countdown(%{countdown_list: []}=booth) do
     photo = Picam.next_frame()
-    
+
     booth
     |> PhotoBooth.countdown
     #add say cheese message
@@ -109,47 +109,47 @@ defmodule TakeFive.Scene.PhotoBooth do
     Process.send_after(self(), :countdown_tick, milliseconds)
     PhotoBooth.countdown(booth)
   end
-  
+
   def handle_info(:choose, {_graph, booth}) do
     jpg = booth.photos |> hd
-    
+
     image_hash = Scenic.Cache.Support.Hash.binary!(jpg, :sha)
     Scenic.Cache.Base.put(Scenic.Cache.Static.Texture, image_hash, jpg)
-    
+
     Picam.set_preview_enabled(false)
-    
-    graph = 
+
+    graph =
       @choose
-      |> rect( {1280, 720}, fill: {:image, image_hash}, t: {400, 0})
-    
+      |> rect( {1280, 720}, fill: {:image, image_hash}, t: {0, 0})
+
     {:noreply, {graph, booth}, push: graph}
   end
 
 
   def handle_info(:countdown_tick, {_graph, booth}) do
-    graph = 
+    graph =
       @countdown
       |> next_countdown(List.first(booth.countdown_list))
-    
+
     {:noreply, {graph, countdown(booth)}, push: graph}
   end
-  
+
   def filter_event({:click, :btn_take_pic} = event, _from, {graph, booth}) do
     send(self(), :countdown_tick)
     {:cont, event, {graph, booth}}
   end
-  
+
   def filter_event({:click, :btn_keep} = event, _from, {graph, booth}) do
     send(self(), :choose)
     {:cont, event, {graph, PhotoBooth.choose(booth, :accept)}}
   end
-  
+
   def filter_event({:click, :btn_discard} = event, _from, {graph, booth}) do
     send(self(), :choose)
     {:cont, event, {graph, PhotoBooth.choose(booth, :reject)}}
   end
-  
-  # keep 
+
+  # keep
   def filter_event(event, _from, {graph, booth}) do
     Logger.warn("Unhandled event: #{inspect event}")
     {:cont, event, {graph, booth}}
