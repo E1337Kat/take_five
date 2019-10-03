@@ -120,7 +120,7 @@ defmodule TakeFive.Scene.PhotoBooth do
 
     graph =
       @choose
-      |> rect( {1280, 720}, fill: {:image, image_hash}, t: {0, 0})
+      |> rect( {640, 480}, fill: {:image, image_hash}, t: {160, 0})
 
     {:noreply, {graph, booth}, push: graph}
   end
