@@ -8,9 +8,6 @@ defmodule TakeFive.Scene.PhotoBooth do
 
   require Logger
 
-  @image_path :code.priv_dir(:take_five) |> Path.join("elder.jpg")
-  @image_hash Scenic.Cache.Support.Hash.file!(@image_path, :sha)
-
   @start_graph Graph.build(font_size: 50, font: :roboto_mono)
                |> group(
                   fn g ->
@@ -24,6 +21,15 @@ defmodule TakeFive.Scene.PhotoBooth do
                   end, [])
 
   @countdown Graph.build(font_size: 250, font: :roboto_mono)
+  
+  @preview Graph.build(font_size: 100, font: :roboto_mono)
+              |> group(
+              fn g ->
+                g
+                |> text_field(
+                "Looks Good!",
+                t: {10, 200})
+              end, [])
 
   @choose Graph.build(font_size: 50, font: :roboto_mono)
               |> group(
@@ -94,44 +100,88 @@ defmodule TakeFive.Scene.PhotoBooth do
     send(self(), :choose)
     booth
   end
+  
+  def random_text(false) do
+    ["looking\ngood", "so\nfine", "say\ncheese"]
+    |> Enum.shuffle
+    |> hd
+  end
+  def random_text(true) do
+    ["looking\ngood?", "so\nfine?", "say\ncheese?"]
+    |> Enum.shuffle
+    |> hd
+  end
 
   def countdown(%{countdown_list: []}=booth) do
-    photo = Picam.next_frame()
-
-    booth
-    |> PhotoBooth.countdown
-    #add say cheese message
-    |> PhotoBooth.add_taken_photo(photo)
-    |> advance
+    jpg = Picam.next_frame()
+    updated_booth = 
+      booth
+      |> PhotoBooth.countdown
+      #add say cheese message
+      |> PhotoBooth.add_taken_photo(jpg)
+    
+    
+    show_photo(updated_booth)
+    
+    
+    
+    updated_booth
   end
   def countdown(booth) do
     {_count, milliseconds} = booth.countdown_list |> List.first
     Process.send_after(self(), :countdown_tick, milliseconds)
     PhotoBooth.countdown(booth)
   end
+  
+  def do_choose(booth) do
+    image_hash = present_photo(booth)
 
-  def handle_info(:choose, {_graph, booth}) do
+    @choose
+    |> rect( {640, 480}, fill: {:image, image_hash}, t: {160, 0})
+  end
+  
+  def show_photo(booth) do
+    Process.send_after(self(), :end_preview, 750)
+    image_hash = present_photo(booth)
+    
+    @preview
+    |> rect( {640, 480}, fill: {:image, image_hash}, t: {160, 0})
+    |> push_graph
+  end
+  
+  def present_photo(booth) do
+    Picam.set_preview_enabled(false)
+    
     jpg = booth.photos |> hd
 
     image_hash = Scenic.Cache.Support.Hash.binary!(jpg, :sha)
     Scenic.Cache.Base.put(Scenic.Cache.Static.Texture, image_hash, jpg)
-
-    Picam.set_preview_enabled(false)
-
-    graph =
-      @choose
-      |> rect( {640, 480}, fill: {:image, image_hash}, t: {160, 0})
-
-    {:noreply, {graph, booth}, push: graph}
+    image_hash
   end
-
-
+  
+  def end_show_photo(booth) do
+    Picam.set_preview_enabled(true)
+    
+    booth
+    |> advance
+  end
+  
   def handle_info(:countdown_tick, {_graph, booth}) do
     graph =
       @countdown
       |> next_countdown(List.first(booth.countdown_list))
 
     {:noreply, {graph, countdown(booth)}, push: graph}
+  end
+  
+  def handle_info(:choose, {_graph, booth}) do
+    graph = do_choose(booth)
+
+    {:noreply, {graph, booth}, push: graph}
+  end
+
+  def handle_info(:end_preview, {graph, booth}) do
+    {:noreply, {graph, end_show_photo(booth)}, push: graph}
   end
 
   def filter_event({:click, :btn_take_pic} = event, _from, {graph, booth}) do
