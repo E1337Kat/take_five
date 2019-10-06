@@ -28,7 +28,7 @@ defmodule TakeFive.Scene.PhotoBooth do
                 g
                 |> text_field(
                 "Looks Good!",
-                t: {10, 200})
+                t: {10, 180}, font_size: 100)
               end, [])
 
   @choose Graph.build(font_size: 50, font: :roboto_mono)
