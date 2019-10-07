@@ -23,13 +23,6 @@ defmodule TakeFive.Scene.PhotoBooth do
   @countdown Graph.build(font_size: 250, font: :roboto_mono)
   
   @preview Graph.build(font_size: 100, font: :roboto_mono)
-              |> group(
-              fn g ->
-                g
-                |> text_field(
-                "Looks Good!",
-                t: {10, 180}, font_size: 100)
-              end, [])
 
   @choose Graph.build(font_size: 50, font: :roboto_mono)
               |> group(
@@ -98,16 +91,27 @@ defmodule TakeFive.Scene.PhotoBooth do
   end
   def advance(%{mode: :choosing}=booth) do
     send(self(), :choose)
+    
     booth
+    |> Map.put(:photos, Enum.reverse(booth.photos))
+  end
+  
+  def reverse_pics(booth) do
+    pics = 
+      booth.taken 
+      |> Enum.reverse
+
+
+    Map.put booth, :taken, pics
   end
   
   def random_text(false) do
-    ["looking\ngood", "so\nfine", "say\ncheese"]
+    ["Nice!", "Fine!", "Cheese!", "Click!", "Pretty!", "Smile!"]
     |> Enum.shuffle
     |> hd
   end
   def random_text(true) do
-    ["looking\ngood?", "so\nfine?", "say\ncheese?"]
+    ["ok?", "Hm...", "fine?", "alright.", "well..."]
     |> Enum.shuffle
     |> hd
   end
@@ -144,8 +148,15 @@ defmodule TakeFive.Scene.PhotoBooth do
     Process.send_after(self(), :end_preview, 750)
     image_hash = present_photo(booth)
     
+    message = random_text(booth.troll)
+    
     @preview
     |> rect( {640, 480}, fill: {:image, image_hash}, t: {160, 0})
+    |> group(
+        fn g ->
+          g
+          |> text_field(message, t: {10, 180} )
+        end, [])
     |> push_graph
   end
   
