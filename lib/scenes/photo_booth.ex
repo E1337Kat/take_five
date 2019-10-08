@@ -108,12 +108,12 @@ defmodule TakeFive.Scene.PhotoBooth do
   end
   
   def random_text(false) do
-    ["Nice!", "Fine!", "Cheese!", "Click!", "Pretty!", "Smile!"]
+    ["Nice\nPic!", "So\nFine!", "Say\nCheese!", "Flash\nClick!", "Great\nHair!", "Smile\nBig!"]
     |> Enum.shuffle
     |> hd
   end
   def random_text(true) do
-    ["ok?", "Hm...", "fine?", "alright.", "well...", "/0 error"]
+    ["Fix your\nhair.", "Hm...\nwell...", "So\nfine?", "alright\nI guess...", "Try\nagain?", "/0 error"]
     |> Enum.shuffle
     |> hd
   end
@@ -157,10 +157,10 @@ defmodule TakeFive.Scene.PhotoBooth do
   end
   
   def thank_you_message(true) do
-    "You've been trolled!\nThank you from\nGigCityElixir!"
+    "You've been trolled!\nThank you from \nCarbon Five and GigCityElixir!"
   end
   def thank_you_message(false) do
-    "Thank you from\nGigCityElixir!"
+    "Thank you from\nCarbon Five and GigCityElixir!"
   end
   
   def do_choose(booth) do

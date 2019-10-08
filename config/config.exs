@@ -6,6 +6,7 @@
 use Mix.Config
 
 config :take_five, target: Mix.target()
+config :take_five, api_key: System.get_env("TAKE_FIVE_API_KEY")
 
 # Customize non-Elixir parts of the firmware. See
 # https://hexdocs.pm/nerves/advanced-configuration.html for details.

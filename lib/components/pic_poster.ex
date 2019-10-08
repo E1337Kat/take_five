@@ -33,6 +33,7 @@ defmodule TakeFive.PicPoster do
           {"Content-length", to_string byte_size(jpg)},
           {"index", to_string(index)},
           {"troll", troll}, 
+          {"api-key", Application.get_env(:take_five, :api_key)},
           {"gts", to_string(gts)}
    	    ]
       )
