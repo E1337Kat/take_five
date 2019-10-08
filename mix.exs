@@ -46,6 +46,7 @@ defmodule TakeFive.MixProject do
       {:scenic, "~> 0.10"},
       {:scenic_sensor, "~> 0.7"},
       {:nerves_network, "~> 0.5"},
+      {:jason, "~> 1.0"},
       {:httpoison, "~> 1.4"},
 
       # Dependencies for all targets except :host

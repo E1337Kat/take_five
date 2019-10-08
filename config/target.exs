@@ -31,7 +31,7 @@ config :nerves_firmware_ssh,
 node_name = if Mix.env() != :prod, do: "take_five"
 
 config :nerves_init_gadget,
-  ifname: "wlan0",
+  ifname:  System.get_env("IFNAME") || "wlan0",
   address_method: :dhcp,
   mdns_domain: "nerves.local",
   node_name: node_name,

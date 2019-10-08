@@ -21,7 +21,7 @@ defmodule TakeFive.PicPoster do
   @doc "posts the image as jpeg"
   def post_image(jpg, index, gts, troll) do
     HTTPoison.post(
-      "https://postman-echo.com/post", 
+      "https://photos.grox.io/api/photos", 
       jpg, 
         [
           {"Content-Type", "image/jpeg"}, 
@@ -31,6 +31,15 @@ defmodule TakeFive.PicPoster do
           {"GTS", to_string(gts)}
    	    ]
       )
+  end
+  
+  def get_troll() do
+    case HTTPoison.get("https://photos.grox.io/api/troll") do
+      {:ok, response} -> 
+        response.body |> Jason.decode! |> Map.get("troll")
+      _ -> 
+        :random.uniform(8) == 1
+    end
   end
   
 end

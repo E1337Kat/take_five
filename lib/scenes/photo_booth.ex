@@ -22,7 +22,7 @@ defmodule TakeFive.Scene.PhotoBooth do
 
   @countdown Graph.build(font_size: 250, font: :roboto_mono)
   
-  @preview Graph.build(font_size: 100, font: :roboto_mono)
+  @preview Graph.build(font_size: 40, font: :roboto_mono)
 
   @choose Graph.build(font_size: 50, font: :roboto_mono)
               |> group(
@@ -46,19 +46,23 @@ defmodule TakeFive.Scene.PhotoBooth do
   def init(_, _opts) do
     initialize_picam()
     seed_random_numbers()
+    
 
+    {:ok, start()}
+  end
+  
+  def start(booth \\ nil) do
     graph = @start_graph
-
     push_graph(graph)
 
     #Process.send_after(self(), :next_frame, 30)
-    troll_mode =
-      [true, false, false]
-      |> Enum.shuffle
-      |> List.first
-
-    {:ok, {graph, PhotoBooth.new(troll_mode)}}
+    troll_mode = TakeFive.PicPoster.get_troll()
+      
+    {graph, start_booth(booth, troll_mode)}
   end
+  
+  def start_booth(nil, troll_mode), do: PhotoBooth.new(troll_mode)
+  def start_booth(booth, troll_mode), do: Map.put(booth, :troll, troll_mode)
 
   def seed_random_numbers() do
     :random.seed(DateTime.to_unix(DateTime.utc_now))
@@ -111,7 +115,7 @@ defmodule TakeFive.Scene.PhotoBooth do
     |> hd
   end
   def random_text(true) do
-    ["ok?", "Hm...", "fine?", "alright.", "well..."]
+    ["ok?", "Hm...", "fine?", "alright.", "well...", "/0 error"]
     |> Enum.shuffle
     |> hd
   end
@@ -155,7 +159,12 @@ defmodule TakeFive.Scene.PhotoBooth do
     |> group(
         fn g ->
           g
-          |> text_field(message, t: {10, 180} )
+          |> text(
+            message, 
+            t: {90, 220}, 
+            width: 100, 
+            height: 100, 
+            text_align: :center_middle )
         end, [])
     |> push_graph
   end
