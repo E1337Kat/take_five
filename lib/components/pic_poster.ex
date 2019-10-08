@@ -12,11 +12,15 @@ defmodule TakeFive.PicPoster do
   def post_images(pics, troll) do
     gts = DateTime.to_unix DateTime.utc_now
     
-    pics
-    |> Enum.with_index
-    |> Enum.map(fn {pic, index} -> 
-      post_image(pic, index, gts, troll) 
-    end)
+    result = 
+      pics
+      |> Enum.with_index
+      |> Enum.map(fn {pic, index} -> 
+        post_image(pic, index, gts, troll) 
+      end)
+      
+    Logger.warn("Posting pics: #{inspect result}")
+    
   end
 
   @doc "posts the image as jpeg"
@@ -27,9 +31,9 @@ defmodule TakeFive.PicPoster do
         [
           {"Content-Type", "image/jpeg"}, 
           {"Content-length", to_string byte_size(jpg)},
-          {"Index", to_string(index)},
-          {"Troll", troll}, 
-          {"GTS", to_string(gts)}
+          {"index", to_string(index)},
+          {"troll", troll}, 
+          {"gts", to_string(gts)}
    	    ]
       )
   end

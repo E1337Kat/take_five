@@ -1,6 +1,7 @@
 defmodule TakeFive.Scene.PhotoBooth do
   use Scenic.Scene
   alias Scenic.Graph
+  alias TakeFive.PicPoster
   alias Pex.Core.PhotoBooth
 
   import Scenic.Primitives
@@ -58,7 +59,7 @@ defmodule TakeFive.Scene.PhotoBooth do
     
     #Process.send_after(self(), :next_frame, 30)
       
-    {graph, PhotoBooth.new(TakeFive.PicPoster.get_troll())}
+    {graph, PhotoBooth.new(PicPoster.get_troll())}
   end
 
   def seed_random_numbers() do
@@ -137,15 +138,16 @@ defmodule TakeFive.Scene.PhotoBooth do
     PhotoBooth.countdown(booth)
   end
   
-  def do_message(%{troll: false}) do
+  def do_transmit(%{troll: troll, chosen: pics}) do
     Process.send_after(self(), :start, 5000)
+    PicPoster.post_images(pics, troll)
     
     @preview
     |> group(
         fn g ->
           g
           |> text(
-            "Thank you from\nGigCityElixir!", 
+            thank_you_message(troll), 
             t: {400, 220}, 
             width: 100, 
             height: 100, 
@@ -153,21 +155,12 @@ defmodule TakeFive.Scene.PhotoBooth do
         end, [])
     |> push_graph
   end
-  def do_message(%{troll: true}) do
-    Process.send_after(self(), :start, 5000)
-    
-    @preview
-    |> group(
-        fn g ->
-          g
-          |> text(
-            "You've been trolled!\nThank you from\nGigCityElixir!", 
-            t: {400, 220}, 
-            width: 100, 
-            height: 100, 
-            text_align: :center_middle )
-        end, [])
-    |> push_graph
+  
+  def thank_you_message(true) do
+    "You've been trolled!\nThank you from\nGigCityElixir!"
+  end
+  def thank_you_message(false) do
+    "Thank you from\nGigCityElixir!"
   end
   
   def do_choose(booth) do
@@ -227,7 +220,7 @@ defmodule TakeFive.Scene.PhotoBooth do
   end
   
   def handle_info(:choose, {_graph, %{mode: :transmitting}=booth}) do
-    graph = do_message(booth)
+    graph = do_transmit(booth)
 
     {:noreply, {graph, booth}, push: graph}
   end
