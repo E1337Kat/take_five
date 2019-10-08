@@ -1,4 +1,5 @@
 defmodule TakeFive.PicPoster do
+  require Logger
   @moduledoc """
   Postimage keeps the contexts that define your domain
   and business logic.
@@ -36,6 +37,7 @@ defmodule TakeFive.PicPoster do
   def get_troll() do
     case HTTPoison.get("https://photos.grox.io/api/troll") do
       {:ok, response} -> 
+        Logger.warn("Getting troll")
         response.body |> Jason.decode! |> Map.get("troll")
       _ -> 
         :random.uniform(8) == 1

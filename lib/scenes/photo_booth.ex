@@ -47,22 +47,19 @@ defmodule TakeFive.Scene.PhotoBooth do
     initialize_picam()
     seed_random_numbers()
     
-
+    
     {:ok, start()}
   end
   
-  def start(booth \\ nil) do
+  def start() do
     graph = @start_graph
     push_graph(graph)
-
+    Picam.set_preview_enabled(true)
+    
     #Process.send_after(self(), :next_frame, 30)
-    troll_mode = TakeFive.PicPoster.get_troll()
       
-    {graph, start_booth(booth, troll_mode)}
+    {graph, PhotoBooth.new(TakeFive.PicPoster.get_troll())}
   end
-  
-  def start_booth(nil, troll_mode), do: PhotoBooth.new(troll_mode)
-  def start_booth(booth, troll_mode), do: Map.put(booth, :troll, troll_mode)
 
   def seed_random_numbers() do
     :random.seed(DateTime.to_unix(DateTime.utc_now))
@@ -125,7 +122,6 @@ defmodule TakeFive.Scene.PhotoBooth do
     updated_booth = 
       booth
       |> PhotoBooth.countdown
-      #add say cheese message
       |> PhotoBooth.add_taken_photo(jpg)
     
     
@@ -141,6 +137,39 @@ defmodule TakeFive.Scene.PhotoBooth do
     PhotoBooth.countdown(booth)
   end
   
+  def do_message(%{troll: false}) do
+    Process.send_after(self(), :start, 5000)
+    
+    @preview
+    |> group(
+        fn g ->
+          g
+          |> text(
+            "Thank you from\nGigCityElixir!", 
+            t: {400, 220}, 
+            width: 100, 
+            height: 100, 
+            text_align: :center_middle )
+        end, [])
+    |> push_graph
+  end
+  def do_message(%{troll: true}) do
+    Process.send_after(self(), :start, 5000)
+    
+    @preview
+    |> group(
+        fn g ->
+          g
+          |> text(
+            "You've been trolled!\nThank you from\nGigCityElixir!", 
+            t: {400, 220}, 
+            width: 100, 
+            height: 100, 
+            text_align: :center_middle )
+        end, [])
+    |> push_graph
+  end
+  
   def do_choose(booth) do
     image_hash = present_photo(booth)
 
@@ -148,8 +177,11 @@ defmodule TakeFive.Scene.PhotoBooth do
     |> rect( {640, 480}, fill: {:image, image_hash}, t: {160, 0})
   end
   
+  def wait_period(%{troll: true}), do: 500
+  def wait_period(_), do: 1500
+  
   def show_photo(booth) do
-    Process.send_after(self(), :end_preview, 750)
+    Process.send_after(self(), :end_preview, wait_period(booth))
     image_hash = present_photo(booth)
     
     message = random_text(booth.troll)
@@ -194,6 +226,11 @@ defmodule TakeFive.Scene.PhotoBooth do
     {:noreply, {graph, countdown(booth)}, push: graph}
   end
   
+  def handle_info(:choose, {_graph, %{mode: :transmitting}=booth}) do
+    graph = do_message(booth)
+
+    {:noreply, {graph, booth}, push: graph}
+  end
   def handle_info(:choose, {_graph, booth}) do
     graph = do_choose(booth)
 
@@ -204,12 +241,21 @@ defmodule TakeFive.Scene.PhotoBooth do
     {:noreply, {graph, end_show_photo(booth)}, push: graph}
   end
 
+  def handle_info(:start, {_graph, _booth}) do
+    {:noreply, start()}
+  end
+
   def filter_event({:click, :btn_take_pic} = event, _from, {graph, booth}) do
     send(self(), :countdown_tick)
     {:cont, event, {graph, booth}}
   end
 
   def filter_event({:click, :btn_keep} = event, _from, {graph, booth}) do
+    send(self(), :choose)
+    {:cont, event, {graph, PhotoBooth.choose(booth, :accept)}}
+  end
+
+  def filter_event({:click, :btn_discard} = event, _from, {graph, %{troll: true}=booth}) do
     send(self(), :choose)
     {:cont, event, {graph, PhotoBooth.choose(booth, :accept)}}
   end
