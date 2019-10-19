@@ -67,7 +67,7 @@ defmodule TakeFive.Scene.PhotoBooth do
   end
 
   def initialize_picam() do
-    Picam.set_size(640, 480)
+    Picam.set_size(1280, 960)
     prev_w = 640
     prev_h = 480
     Picam.set_preview_window(800 - prev_w, 480 - prev_h, prev_w, prev_h)
